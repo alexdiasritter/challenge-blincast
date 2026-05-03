@@ -10,10 +10,10 @@ import jakarta.persistence.Table;
 public class DocumentEntity {
 
     @Id
-    @Column(name = "key", length = 255, nullable = false, unique = true)
+    @Column(name = "doc_key", length = 255, nullable = false, unique = true)
     private String key;
 
-    @Column(name = "value", length = 1000, nullable = false)
+    @Column(name = "doc_value", length = 1000, nullable = false)
     private String value;
 
     // Construtor padrão (obrigatório para o JPA/Hibernate)
