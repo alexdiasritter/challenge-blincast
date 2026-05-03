@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blincast - Gerenciador de Documentos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .btn-create {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-update {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .response {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .response.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .response.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+
+        .response-code {
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Blincast</h1>
+        <p class="subtitle">Gerenciador de Documentos</p>
+
+        <form id="documentForm">
+            <div class="form-group">
+                <label for="key">Chave</label>
+                <input type="text" id="key" placeholder="Ex: nome, email, cidade" required>
+            </div>
+
+            <div class="form-group">
+                <label for="value">Valor</label>
+                <input type="text" id="value" placeholder="Ex: João Silva">
+                <p class="info-text" id="valueInfo"></p>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-create" onclick="sendRequest('create')">
+                    ✨ Criar
+                </button>
+                <button type="button" class="btn-update" onclick="sendRequest('update')">
+                    🔄 Atualizar
+                </button>
+                <button type="button" class="btn-delete" onclick="sendRequest('delete')">
+                    🗑️ Deletar
+                </button>
+            </div>
+        </form>
+
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Processando...</p>
+        </div>
+
+        <div class="response" id="response"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/document';
+
+        const keyInput = document.getElementById('key');
+        const valueInput = document.getElementById('value');
+        const valueInfo = document.getElementById('valueInfo');
+        const responseDiv = document.getElementById('response');
+        const loader = document.getElementById('loader');
+
+        async function sendRequest(action) {
+            // Validação
+            const key = keyInput.value.trim();
+            if (!key) {
+                showResponse('error', 'O campo Chave é obrigatório', '');
+                return;
+            }
+
+            const value = valueInput.value.trim();
+            if (action !== 'delete' && !value) {
+                showResponse('error', `O campo Valor é obrigatório para ${action === 'create' ? 'criar' : 'atualizar'}`, '');
+                return;
+            }
+
+            // Monta o corpo da requisição
+            const body = {
+                action: action,
+                key: key
+            };
+
+            if (action !== 'delete') {
+                body.value = value;
+            }
+
+            // Mostra loader
+            showLoader(true);
+            hideResponse();
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                // Mapeia o código HTTP para mensagem amigável
+                const message = getMessage(response.status, data.code, action, key);
+
+                if (data.status === 'ok') {
+                    showResponse('success', message, data.code);
+                    // Limpa campos após sucesso
+                    if (action === 'delete') {
+                        keyInput.value = '';
+                    }
+                    valueInput.value = '';
+                } else {
+                    showResponse('error', message, data.code);
+                }
+            } catch (error) {
+                showResponse('error', 'Erro de conexão com o servidor. Verifique se o backend está rodando em ' + API_URL, 'N/A');
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        function getMessage(httpStatus, code, action, key) {
+            const messages = {
+                200: `✅ Sucesso! Documento <strong>${key}</strong> ${action === 'create' ? 'criado' : action === 'update' ? 'atualizado' : 'deletado'} com sucesso.`,
+                400: '❌ Requisição inválida. Verifique os campos preenchidos.',
+                404: `❌ Chave <strong>${key}</strong> não encontrada.`,
+                409: `❌ Chave <strong>${key}</strong> já existe. Use Atualizar para alterar.`,
+                500: '❌ Erro interno do servidor. Tente novamente.'
+            };
+
+            return messages[httpStatus] || `Código ${code}: Resposta inesperada do servidor.`;
+        }
+
+        function showResponse(type, message, code) {
+            responseDiv.className = 'response ' + type;
+            responseDiv.innerHTML = `
+                <p>${message}</p>
+                ${code ? `<p class="response-code">Código: ${code}</p>` : ''}
+            `;
+        }
+
+        function hideResponse() {
+            responseDiv.className = 'response';
+            responseDiv.innerHTML = '';
+        }
+
+        function showLoader(show) {
+            loader.className = 'loader' + (show ? ' active' : '');
+        }
+    </script>
+</body>
+</html>
